@@ -8,9 +8,11 @@
   },
   "dependencies": {
     "axios": "^1.16.1",
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.1.0",
+    "express": "^5.2.1",
+    "screener-india": "^1.0.1",
+    "screener-scraper-pro": "^1.0.0",
     "yahoo-finance2": "^2.14.0"
   },
   "devDependencies": {

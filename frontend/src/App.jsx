@@ -3,35 +3,29 @@ import API from "./api/stockApi";
 import "./arka.css";
 
 // ── default manual data shape ─────────────────────────────────
-// Only fields that CANNOT be auto-fetched from Yahoo
 const initManual = () => ({
-  // Quality — manual only
   piotroski: "",
-
-  // Momentum — manual only
-  sectorScore:             "",
+  sectorScore: "",
   entryBarClosingWithin25: false,
-  candleHighWeeks:         "",
-  sgvMacd:                 false,
-
-  // Technical — all manual (chart pattern reading)
-  consolidationRange:  "",
+  candleHighWeeks: "",
+  sgvMacd: false,
+  consolidationRange: "",
   barsInConsolidation: "",
-  adrPercent:          "",
-  stoplossPercent:     "",
-  tightnessScore:      "",
-  higherLowFormation:  false,
-  vcpPattern:          false,
+  adrPercent: "",
+  stoplossPercent: "",
+  tightnessScore: "",
+  higherLowFormation: false,
+  vcpPattern: false,
   weeklyCloseBelowEMA: false,
-  volumeDecreasing:    false,
+  volumeDecreasing: false,
 });
 
 // ── helpers ───────────────────────────────────────────────────
-const num  = (v) => (v === "" || v == null ? undefined : Number(v));
+const num = (v) => (v === "" || v == null ? undefined : Number(v));
 const bool = (v) => Boolean(v);
 
 function signalColor(signal) {
-  if (signal === "BUY")   return "#4ade80";
+  if (signal === "BUY") return "#4ade80";
   if (signal === "WATCH") return "#facc15";
   return "#f87171";
 }
@@ -41,8 +35,10 @@ function scoreColor(s) {
   return "#f87171";
 }
 function fmt(v, dec = 1) {
-  if (v == null) return "—";
-  return Number(v).toFixed(dec);
+  if (v == null || v === "") return "—";
+  const num = Number(v);
+  if (isNaN(num)) return "—";
+  return num.toFixed(dec);
 }
 
 // ── Field / Toggle sub-components ────────────────────────────
@@ -78,7 +74,7 @@ function Toggle({ label, val, onChange }) {
 // ── ManualPanel ───────────────────────────────────────────────
 function ManualPanel({ index, data, onChange }) {
   const [open, setOpen] = useState(false);
-  const [tab,  setTab]  = useState("quality");
+  const [tab, setTab] = useState("quality");
 
   const set = (k, v) => onChange(index, { ...data, [k]: v });
 
@@ -86,16 +82,15 @@ function ManualPanel({ index, data, onChange }) {
     <div className="manualWrap">
       <button className="toggleBtn" onClick={() => setOpen(!open)}>
         {open ? "▲ Hide Manual Fields" : "▼ Add Manual Fields"}
-        <span className="toggleNote"> (auto fields are fetched from Yahoo)</span>
+        <span className="toggleNote"> (auto fields are fetched)</span>
       </button>
 
       {open && (
         <div className="manualPanel">
-          {/* tabs */}
           <div className="tabs">
             {[
-              { id: "quality",   label: "📊 Quality" },
-              { id: "momentum",  label: "⚡ Momentum" },
+              { id: "quality", label: "📊 Quality" },
+              { id: "momentum", label: "⚡ Momentum" },
               { id: "technical", label: "🔧 Technical" },
             ].map((t) => (
               <button
@@ -108,109 +103,40 @@ function ManualPanel({ index, data, onChange }) {
             ))}
           </div>
 
-          {/* QUALITY */}
           {tab === "quality" && (
             <div className="panelContent">
-              <div className="autoNote">
-                ✅ Auto-fetched from Yahoo: ROE, ROCE, Current Ratio, Operating Margin, EPS CAGR
-              </div>
+              <div className="autoNote">✅ Auto-fetched: ROE, ROCE, Current Ratio, Operating Margin, EPS CAGR</div>
               <div className="fieldGrid">
-                <Field
-                  label="Piotroski Score"
-                  hint="(0–9)"
-                  value={data.piotroski}
-                  onChange={(v) => set("piotroski", v)}
-                />
+                <Field label="Piotroski Score" hint="(0–9)" value={data.piotroski} onChange={(v) => set("piotroski", v)} />
               </div>
             </div>
           )}
 
-          {/* MOMENTUM */}
           {tab === "momentum" && (
             <div className="panelContent">
-              <div className="autoNote">
-                ✅ Auto-fetched: MACD, Above 20MA, Volume Ratio, Bar Size, Nifty EMA
-              </div>
+              <div className="autoNote">✅ Auto-fetched: MACD, Above 20MA, Volume Ratio, Bar Size, Nifty EMA</div>
               <div className="fieldGrid">
-                <Field
-                  label="Sector Score"
-                  hint="(Trendlyne, 0–100)"
-                  value={data.sectorScore}
-                  onChange={(v) => set("sectorScore", v)}
-                />
-                <Field
-                  label="Candle High (weeks back)"
-                  hint="(how many weeks ago was pivot high)"
-                  value={data.candleHighWeeks}
-                  onChange={(v) => set("candleHighWeeks", v)}
-                />
-                <Toggle
-                  label="Entry Bar Closing Within 25% of High"
-                  val={data.entryBarClosingWithin25}
-                  onChange={(v) => set("entryBarClosingWithin25", v)}
-                />
-                <Toggle
-                  label="SGV MACD Theory Applied"
-                  val={data.sgvMacd}
-                  onChange={(v) => set("sgvMacd", v)}
-                />
+                <Field label="Sector Score" hint="(0–100)" value={data.sectorScore} onChange={(v) => set("sectorScore", v)} />
+                <Field label="Candle High (weeks back)" value={data.candleHighWeeks} onChange={(v) => set("candleHighWeeks", v)} />
+                <Toggle label="Entry Bar Closing Within 25% of High" val={data.entryBarClosingWithin25} onChange={(v) => set("entryBarClosingWithin25", v)} />
+                <Toggle label="SGV MACD Theory Applied" val={data.sgvMacd} onChange={(v) => set("sgvMacd", v)} />
               </div>
             </div>
           )}
 
-          {/* TECHNICAL */}
           {tab === "technical" && (
             <div className="panelContent">
-              <div className="autoNote">
-                ✅ Auto-calculated: Base within 20% of 52W High
-              </div>
+              <div className="autoNote">✅ Auto-calculated: Base within 20% of 52W High</div>
               <div className="fieldGrid">
-                <Field
-                  label="6-Bar Consolidation Range %"
-                  value={data.consolidationRange}
-                  onChange={(v) => set("consolidationRange", v)}
-                />
-                <Field
-                  label="Bars in Consolidation"
-                  value={data.barsInConsolidation}
-                  onChange={(v) => set("barsInConsolidation", v)}
-                />
-                <Field
-                  label="ADR % Volatility"
-                  value={data.adrPercent}
-                  onChange={(v) => set("adrPercent", v)}
-                />
-                <Field
-                  label="Stoploss % Risk"
-                  value={data.stoplossPercent}
-                  onChange={(v) => set("stoplossPercent", v)}
-                />
-                <Field
-                  label="Tightness Score"
-                  hint="((HH-LL)/LL×100)"
-                  value={data.tightnessScore}
-                  onChange={(v) => set("tightnessScore", v)}
-                />
-                <Toggle
-                  label="Higher Low Formation in Base"
-                  val={data.higherLowFormation}
-                  onChange={(v) => set("higherLowFormation", v)}
-                />
-                <Toggle
-                  label="VCP Pattern (Last 3 Swings)"
-                  val={data.vcpPattern}
-                  onChange={(v) => set("vcpPattern", v)}
-                />
-                <Toggle
-                  label="Weekly Close Below 20 EMA? (inverted)"
-                  val={data.weeklyCloseBelowEMA}
-                  onChange={(v) => set("weeklyCloseBelowEMA", v)}
-                />
-                <Toggle
-                  label="Volume Decreasing over Weeks"
-                  val={data.volumeDecreasing}
-                  onChange={(v) => set("volumeDecreasing", v)}
-                />
+                <Field label="6-Bar Consolidation Range %" value={data.consolidationRange} onChange={(v) => set("consolidationRange", v)} />
+                <Field label="Bars in Consolidation" value={data.barsInConsolidation} onChange={(v) => set("barsInConsolidation", v)} />
+                <Field label="ADR % Volatility" value={data.adrPercent} onChange={(v) => set("adrPercent", v)} />
+                <Field label="Stoploss % Risk" value={data.stoplossPercent} onChange={(v) => set("stoplossPercent", v)} />
+                <Field label="Tightness Score" hint="((HH-LL)/LL×100)" value={data.tightnessScore} onChange={(v) => set("tightnessScore", v)} />
+                <Toggle label="Higher Low Formation in Base" val={data.higherLowFormation} onChange={(v) => set("higherLowFormation", v)} />
+                <Toggle label="VCP Pattern (Last 3 Swings)" val={data.vcpPattern} onChange={(v) => set("vcpPattern", v)} />
+                <Toggle label="Weekly Close Below 20 EMA? (inverted)" val={data.weeklyCloseBelowEMA} onChange={(v) => set("weeklyCloseBelowEMA", v)} />
+                <Toggle label="Volume Decreasing over Weeks" val={data.volumeDecreasing} onChange={(v) => set("volumeDecreasing", v)} />
               </div>
             </div>
           )}
@@ -222,7 +148,7 @@ function ManualPanel({ index, data, onChange }) {
 
 // ── AutoDataRow — shows what was auto-fetched ─────────────────
 function AutoDataRow({ autoData }) {
-  if (!autoData) return null;
+  if (!autoData) return <div className="autoDataRow">No data</div>;
   return (
     <div className="autoDataRow">
       <span className="autoTag">AUTO</span>
@@ -248,15 +174,14 @@ function AutoDataRow({ autoData }) {
 // ── ScoreCard ─────────────────────────────────────────────────
 function ScoreCard({ stock }) {
   const scores = [
-    { label: "Trend",     val: stock.trendScore,     weight: "35%" },
+    { label: "Trend", val: stock.trendScore, weight: "35%" },
     { label: "Technical", val: stock.technicalScore, weight: "30%" },
-    { label: "Momentum",  val: stock.momentumScore,  weight: "20%" },
-    { label: "Quality",   val: stock.qualityScore,   weight: "15%" },
+    { label: "Momentum", val: stock.momentumScore, weight: "20%" },
+    { label: "Quality", val: stock.qualityScore, weight: "15%" },
   ];
 
   return (
     <div className="stockCard">
-      {/* header */}
       <div className="cardHeader">
         <div>
           <h2 className="cardTicker">{stock.ticker}</h2>
@@ -267,7 +192,6 @@ function ScoreCard({ stock }) {
         </div>
       </div>
 
-      {/* big score */}
       <div className="finalScoreBox">
         <span className="finalScoreNum" style={{ color: scoreColor(stock.finalScore) }}>
           {stock.finalScore}
@@ -275,7 +199,6 @@ function ScoreCard({ stock }) {
         <span className="finalScoreLabel">/100</span>
       </div>
 
-      {/* sub-score bars */}
       <div className="subScores">
         {scores.map((s) => (
           <div key={s.label} className="subScoreRow">
@@ -284,20 +207,15 @@ function ScoreCard({ stock }) {
               <span className="subScoreWeight">{s.weight}</span>
             </div>
             <div className="barTrack">
-              <div
-                className="barFill"
-                style={{ width: `${s.val}%`, background: scoreColor(s.val) }}
-              />
+              <div className="barFill" style={{ width: `${s.val}%`, background: scoreColor(s.val) }} />
             </div>
             <span className="subScoreVal">{s.val}</span>
           </div>
         ))}
       </div>
 
-      {/* auto-fetched data row */}
       <AutoDataRow autoData={stock.autoData} />
 
-      {/* price info */}
       <div className="priceGrid">
         <div className="priceBox">
           <p className="priceLabel">CMP</p>
@@ -327,8 +245,8 @@ function ScoreCard({ stock }) {
 
 // ── App ───────────────────────────────────────────────────────
 export default function App() {
-  const [stocks,  setStocks]  = useState(["", "", "", "", ""]);
-  const [manual,  setManual]  = useState(Array(5).fill(null).map(initManual));
+  const [stocks, setStocks] = useState(["", "", "", "", ""]);
+  const [manual, setManual] = useState(Array(5).fill(null).map(initManual));
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -350,37 +268,36 @@ export default function App() {
       setResults([]);
 
       const tickers = stocks.filter((s) => s.trim() !== "");
-      if (!tickers.length) { alert("Enter at least one ticker"); return; }
+      if (!tickers.length) {
+        alert("Enter at least one ticker");
+        return;
+      }
 
-      // Build manual map — only manual fields, keyed by ticker
       const manualMap = {};
       stocks.forEach((ticker, i) => {
         if (!ticker.trim()) return;
         const m = manual[i];
         manualMap[ticker] = {
-          // quality manual
           piotroski: num(m.piotroski),
-
-          // momentum manual
-          sectorScore:             num(m.sectorScore),
+          sectorScore: num(m.sectorScore),
           entryBarClosingWithin25: bool(m.entryBarClosingWithin25),
-          candleHighWeeks:         num(m.candleHighWeeks),
-          sgvMacd:                 bool(m.sgvMacd),
-
-          // technical manual
-          consolidationRange:  num(m.consolidationRange),
+          candleHighWeeks: num(m.candleHighWeeks),
+          sgvMacd: bool(m.sgvMacd),
+          consolidationRange: num(m.consolidationRange),
           barsInConsolidation: num(m.barsInConsolidation),
-          adrPercent:          num(m.adrPercent),
-          stoplossPercent:     num(m.stoplossPercent),
-          tightnessScore:      num(m.tightnessScore),
-          higherLowFormation:  bool(m.higherLowFormation),
-          vcpPattern:          bool(m.vcpPattern),
+          adrPercent: num(m.adrPercent),
+          stoplossPercent: num(m.stoplossPercent),
+          tightnessScore: num(m.tightnessScore),
+          higherLowFormation: bool(m.higherLowFormation),
+          vcpPattern: bool(m.vcpPattern),
           weeklyCloseBelowEMA: bool(m.weeklyCloseBelowEMA),
-          volumeDecreasing:    bool(m.volumeDecreasing),
+          volumeDecreasing: bool(m.volumeDecreasing),
         };
       });
 
+      // ✅ Single API call
       const res = await API.post("/analyze", { tickers, manual: manualMap });
+      console.log("API Response:", res.data);
       setResults(res.data.results);
     } catch (err) {
       console.error(err);
@@ -395,12 +312,9 @@ export default function App() {
       <div className="headerBlock">
         <p className="headerSub">SOVEX CAPITAL</p>
         <h1 className="title">Swing Stock Analyzer</h1>
-        <p className="headerDesc">
-          35% Trend · 30% Technical · 20% Momentum · 15% Quality
-        </p>
+        <p className="headerDesc">35% Trend · 30% Technical · 20% Momentum · 15% Quality</p>
       </div>
 
-      {/* 5 stock inputs */}
       <div className="inputSection">
         {stocks.map((stock, i) => (
           <div key={i} className="stockInputBlock">
@@ -408,26 +322,19 @@ export default function App() {
               <span className="inputNum">{i + 1}</span>
               <input
                 type="text"
-                placeholder={`Ticker ${i + 1}  e.g. RELIANCE`}
+                placeholder={`Ticker ${i + 1} e.g. RELIANCE`}
                 value={stock}
                 onChange={(e) => handleTicker(i, e.target.value)}
                 className="stockInput"
               />
             </div>
-            {stock.trim() && (
-              <ManualPanel index={i} data={manual[i]} onChange={handleManual} />
-            )}
+            {stock.trim() && <ManualPanel index={i} data={manual[i]} onChange={handleManual} />}
           </div>
         ))}
       </div>
 
       <button className="analyzeBtn" onClick={handleAnalyze} disabled={loading}>
-        {loading ? (
-          <span className="btnLoading">
-            <span className="dot" /><span className="dot" /><span className="dot" />
-            Fetching & Analyzing…
-          </span>
-        ) : "🔍 Analyze Stocks"}
+        {loading ? "Fetching & Analyzing…" : "🔍 Analyze Stocks"}
       </button>
 
       {results.length > 0 && (
