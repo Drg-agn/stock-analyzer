@@ -14,7 +14,56 @@ function calcROEFromStatements(income, balance) {
   return 0;
 }
 
-// ── Fetch Fundamentals ────────────────────────────────────────
+// ── Quality Score Calculator (Sovex PDF formula, max 100) ─────
+function calcQualityScore({ piotroski, roe, roce, epsCagr, currentRatio, operatingMargin }) {
+  let score = 0;
+
+  // Piotroski (max 5)
+  const p = Number(piotroski || 0);
+  if      (p >= 8)   score += 5;
+  else if (p >= 6)   score += 4;
+  else if (p >= 4.5) score += 3;
+  // ≤4 → 0
+
+  // ROE % (max 20)
+  const r = Number(roe || 0);
+  if      (r >= 25) score += 20;
+  else if (r >= 20) score += 16;
+  else if (r >= 15) score += 12;
+  else if (r >= 10) score += 6;
+
+  // ROCE % (max 30)
+  const rc = Number(roce || 0);
+  if      (rc >= 25) score += 30;
+  else if (rc >= 20) score += 25;
+  else if (rc >= 15) score += 20;
+  else if (rc >= 10) score += 10;
+
+  // EPS CAGR % (max 25)
+  const eps = Number(epsCagr || 0);
+  if      (eps >= 25) score += 25;
+  else if (eps >= 20) score += 20;
+  else if (eps >= 15) score += 15;
+  else if (eps >= 10) score += 8;
+
+  // Current Ratio (max 10)
+  const cr = Number(currentRatio || 0);
+  if      (cr >= 1.5) score += 10;
+  else if (cr >= 1.3) score += 8;
+  else if (cr >= 1.1) score += 6;
+  else if (cr >= 0.9) score += 4;
+
+  // Operating Margin % (max 10)
+  const om = Number(operatingMargin || 0);
+  if      (om >= 25) score += 10;
+  else if (om >= 20) score += 8;
+  else if (om >= 15) score += 6;
+  else if (om >= 10) score += 4;
+
+  return score; // 0–100
+}
+
+// ── Fetch Fundamentals from Alpha Vantage ─────────────────────
 async function fetchFundamentals(symbol) {
   try {
     const ticker = `${symbol}.BSE`;
@@ -78,42 +127,78 @@ async function fetchFundamentals(symbol) {
       }
     }
 
+    // ── CURRENT RATIO ─────────────────────────────────────────────
+    let currentRatio = 0;
+    if (balance.annualReports?.length > 0) {
+      const latestBalance      = balance.annualReports[0];
+      const currentAssets      = Number(latestBalance.totalCurrentAssets      || 0);
+      const currentLiabilities = Number(latestBalance.totalCurrentLiabilities || 0);
+      if (currentLiabilities > 0) {
+        currentRatio = currentAssets / currentLiabilities;
+      }
+    }
+
     return {
-      roe:             isNaN(roe)             ? 0 : roe.toFixed(1),
-      roce:            isNaN(roce)            ? 0 : roce.toFixed(1),
-      operatingMargin: isNaN(operatingMargin) ? 0 : operatingMargin.toFixed(1),
-      epsCagr:         isNaN(epsCagr)         ? 0 : epsCagr.toFixed(1),
+      roe:             isNaN(roe)             ? 0 : Number(roe.toFixed(1)),
+      roce:            isNaN(roce)            ? 0 : Number(roce.toFixed(1)),
+      operatingMargin: isNaN(operatingMargin) ? 0 : Number(operatingMargin.toFixed(1)),
+      epsCagr:         isNaN(epsCagr)         ? 0 : Number(epsCagr.toFixed(1)),
+      currentRatio:    isNaN(currentRatio)    ? 0 : Number(currentRatio.toFixed(2)),
     };
   } catch (err) {
     console.log("Alpha Vantage Error:", err.message);
-    return { roe: 0, roce: 0, operatingMargin: 0, epsCagr: 0 };
+    return { roe: 0, roce: 0, operatingMargin: 0, epsCagr: 0, currentRatio: 0 };
   }
 }
 
 // ── Analyze Controller ────────────────────────────────────────
 const analyzeStocks = async (req, res) => {
   try {
-    const { tickers } = req.body;
+    const { tickers, manual } = req.body; // manual is keyed by ticker symbol
 
     const results = [];
 
     for (const ticker of tickers) {
       try {
         const fundamentals = await fetchFundamentals(ticker);
+        const manualData   = manual?.[ticker] || {};
 
-        const finalScore = Math.floor(Math.random() * 40 + 60);
+        // ── Quality Score (real formula from PDF) ──────────────
+        const qualityScore = calcQualityScore({
+          piotroski:       manualData.piotroski     || 0,
+          roe:             fundamentals.roe,
+          roce:            fundamentals.roce,
+          epsCagr:         fundamentals.epsCagr,
+          currentRatio:    fundamentals.currentRatio,
+          operatingMargin: fundamentals.operatingMargin,
+        });
+
+        // ── Other scores still random (replace later) ──────────
+        const trendScore     = Math.floor(Math.random() * 30 + 70);
+        const technicalScore = Math.floor(Math.random() * 30 + 65);
+        const momentumScore  = Math.floor(Math.random() * 30 + 60);
+
+        // ── Final Score (weighted per PDF) ─────────────────────
+        // 35% Trend + 30% Technical + 20% Momentum + 15% Quality
+        const finalScore = Math.round(
+          0.35 * trendScore +
+          0.30 * technicalScore +
+          0.20 * momentumScore +
+          0.15 * qualityScore
+        );
+
         let signal = "AVOID";
-        if (finalScore >= 80) signal = "BUY";
-        else if (finalScore >= 65) signal = "WATCH";
+        if (finalScore > 70)      signal = "BUY";
+        else if (finalScore > 60) signal = "WATCH";
 
         results.push({
           ticker,
           name: ticker,
 
-          trendScore:     Math.floor(Math.random() * 30 + 70),
-          technicalScore: Math.floor(Math.random() * 30 + 65),
-          momentumScore:  Math.floor(Math.random() * 30 + 60),
-          qualityScore:   Math.floor(Math.random() * 30 + 60),
+          trendScore,
+          technicalScore,
+          momentumScore,
+          qualityScore,
 
           finalScore,
           signal,
@@ -130,7 +215,7 @@ const analyzeStocks = async (req, res) => {
           autoData: {
             roe:             fundamentals.roe,
             roce:            fundamentals.roce,
-            currentRatio:    1.8,
+            currentRatio:    fundamentals.currentRatio,  // real data, not hardcoded
             operatingMargin: fundamentals.operatingMargin,
             epsCagr:         fundamentals.epsCagr,
             macdPositive:    true,
