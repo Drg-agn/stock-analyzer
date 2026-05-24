@@ -1,6 +1,6 @@
 import { useState } from "react";
 import API from "./api/stockApi";
-import "./app.css";
+import "./arka.css";
 
 // ── default manual data shape ─────────────────────────────────
 // Only fields that CANNOT be auto-fetched from Yahoo
