@@ -10,7 +10,8 @@ app.use(express.json());
 
 app.use("/api/analyze", analyzeRoutes);
 
-const PORT = 5000;
+// IMPORTANT FOR RENDER
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
