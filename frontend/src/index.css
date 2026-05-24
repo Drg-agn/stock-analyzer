@@ -1,0 +1,138 @@
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  background:#0b0b12;
+  color:white;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+.app{
+  width:100%;
+  min-height:100vh;
+  padding:40px;
+}
+
+.header{
+  text-align:center;
+  margin-bottom:40px;
+}
+
+.header h1{
+  font-size:48px;
+  color:#8b5cf6;
+}
+
+.header p{
+  color:#999;
+  margin-top:10px;
+}
+
+.input-box{
+  display:flex;
+  gap:15px;
+  flex-wrap:wrap;
+  justify-content:center;
+  margin-bottom:40px;
+}
+
+.input-box input{
+  width:180px;
+  padding:14px;
+  border:none;
+  outline:none;
+  border-radius:10px;
+  background:#1b1b25;
+  color:white;
+  font-size:16px;
+}
+
+.input-box button{
+  padding:14px 30px;
+  border:none;
+  border-radius:10px;
+  background:#8b5cf6;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+}
+
+.best-card{
+  background:#171722;
+  padding:30px;
+  border-radius:20px;
+  margin-bottom:40px;
+  text-align:center;
+  border:2px solid #8b5cf6;
+}
+
+.best-card h1{
+  font-size:42px;
+  margin-top:10px;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:20px;
+}
+
+.card{
+  background:#171722;
+  padding:25px;
+  border-radius:18px;
+}
+
+.card h2{
+  font-size:28px;
+}
+
+.card p{
+  color:#aaa;
+  margin-top:5px;
+}
+
+.cmp{
+  font-size:34px;
+  margin:20px 0;
+  color:#22c55e;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:10px;
+  color:#ddd;
+}
+
+.score{
+  margin-top:20px;
+  font-size:22px;
+  font-weight:bold;
+}
+
+.signal{
+  margin-top:15px;
+  padding:10px;
+  border-radius:10px;
+  text-align:center;
+  font-weight:bold;
+}
+
+.BUY{
+  background:#14532d;
+  color:#22c55e;
+}
+
+.WATCH{
+  background:#78350f;
+  color:#f59e0b;
+}
+
+.AVOID{
+  background:#7f1d1d;
+  color:#ef4444;
+}
