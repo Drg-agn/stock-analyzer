@@ -36,9 +36,9 @@ function scoreColor(s) {
 }
 function fmt(v, dec = 1) {
   if (v == null || v === "") return "—";
-  const num = Number(v);
-  if (isNaN(num)) return "—";
-  return num.toFixed(dec);
+  const n = Number(v);
+  if (isNaN(n)) return "—";
+  return n.toFixed(dec);
 }
 
 // ── Field / Toggle sub-components ────────────────────────────
@@ -75,7 +75,6 @@ function Toggle({ label, val, onChange }) {
 function ManualPanel({ index, data, onChange }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("quality");
-
   const set = (k, v) => onChange(index, { ...data, [k]: v });
 
   return (
@@ -84,7 +83,6 @@ function ManualPanel({ index, data, onChange }) {
         {open ? "▲ Hide Manual Fields" : "▼ Add Manual Fields"}
         <span className="toggleNote"> (auto fields are fetched)</span>
       </button>
-
       {open && (
         <div className="manualPanel">
           <div className="tabs">
@@ -93,16 +91,11 @@ function ManualPanel({ index, data, onChange }) {
               { id: "momentum", label: "⚡ Momentum" },
               { id: "technical", label: "🔧 Technical" },
             ].map((t) => (
-              <button
-                key={t.id}
-                className={`tab ${tab === t.id ? "tabActive" : ""}`}
-                onClick={() => setTab(t.id)}
-              >
+              <button key={t.id} className={`tab ${tab === t.id ? "tabActive" : ""}`} onClick={() => setTab(t.id)}>
                 {t.label}
               </button>
             ))}
           </div>
-
           {tab === "quality" && (
             <div className="panelContent">
               <div className="autoNote">✅ Auto-fetched: ROE, ROCE, Current Ratio, Operating Margin, EPS CAGR</div>
@@ -111,7 +104,6 @@ function ManualPanel({ index, data, onChange }) {
               </div>
             </div>
           )}
-
           {tab === "momentum" && (
             <div className="panelContent">
               <div className="autoNote">✅ Auto-fetched: MACD, Above 20MA, Volume Ratio, Bar Size, Nifty EMA</div>
@@ -123,7 +115,6 @@ function ManualPanel({ index, data, onChange }) {
               </div>
             </div>
           )}
-
           {tab === "technical" && (
             <div className="panelContent">
               <div className="autoNote">✅ Auto-calculated: Base within 20% of 52W High</div>
@@ -172,7 +163,28 @@ function AutoDataRow({ autoData }) {
 }
 
 // ── ScoreCard ─────────────────────────────────────────────────
+// This is the component you asked for – full code here
 function ScoreCard({ stock }) {
+  // If backend returned an error for this stock, show an error card
+  if (stock.error) {
+    return (
+      <div className="stockCard">
+        <div className="cardHeader">
+          <div>
+            <h2 className="cardTicker">{stock.ticker}</h2>
+            <p className="cardName">Error: {stock.error}</p>
+          </div>
+        </div>
+        <div className="priceGrid">
+          <div className="priceBox">
+            <p className="priceLabel">Status</p>
+            <p className="priceVal">Failed to load</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const scores = [
     { label: "Trend", val: stock.trendScore, weight: "35%" },
     { label: "Technical", val: stock.technicalScore, weight: "30%" },
@@ -263,42 +275,42 @@ export default function App() {
   };
 
   const handleAnalyze = async () => {
+    setLoading(true);
+    setResults([]);
+
+    const tickers = stocks.filter((s) => s.trim() !== "");
+    if (!tickers.length) {
+      alert("Enter at least one ticker");
+      setLoading(false);
+      return;
+    }
+
+    const manualMap = {};
+    stocks.forEach((ticker, i) => {
+      if (!ticker.trim()) return;
+      const m = manual[i];
+      manualMap[ticker] = {
+        piotroski: num(m.piotroski),
+        sectorScore: num(m.sectorScore),
+        entryBarClosingWithin25: bool(m.entryBarClosingWithin25),
+        candleHighWeeks: num(m.candleHighWeeks),
+        sgvMacd: bool(m.sgvMacd),
+        consolidationRange: num(m.consolidationRange),
+        barsInConsolidation: num(m.barsInConsolidation),
+        adrPercent: num(m.adrPercent),
+        stoplossPercent: num(m.stoplossPercent),
+        tightnessScore: num(m.tightnessScore),
+        higherLowFormation: bool(m.higherLowFormation),
+        vcpPattern: bool(m.vcpPattern),
+        weeklyCloseBelowEMA: bool(m.weeklyCloseBelowEMA),
+        volumeDecreasing: bool(m.volumeDecreasing),
+      };
+    });
+
     try {
-      setLoading(true);
-      setResults([]);
-
-      const tickers = stocks.filter((s) => s.trim() !== "");
-      if (!tickers.length) {
-        alert("Enter at least one ticker");
-        return;
-      }
-
-      const manualMap = {};
-      stocks.forEach((ticker, i) => {
-        if (!ticker.trim()) return;
-        const m = manual[i];
-        manualMap[ticker] = {
-          piotroski: num(m.piotroski),
-          sectorScore: num(m.sectorScore),
-          entryBarClosingWithin25: bool(m.entryBarClosingWithin25),
-          candleHighWeeks: num(m.candleHighWeeks),
-          sgvMacd: bool(m.sgvMacd),
-          consolidationRange: num(m.consolidationRange),
-          barsInConsolidation: num(m.barsInConsolidation),
-          adrPercent: num(m.adrPercent),
-          stoplossPercent: num(m.stoplossPercent),
-          tightnessScore: num(m.tightnessScore),
-          higherLowFormation: bool(m.higherLowFormation),
-          vcpPattern: bool(m.vcpPattern),
-          weeklyCloseBelowEMA: bool(m.weeklyCloseBelowEMA),
-          volumeDecreasing: bool(m.volumeDecreasing),
-        };
-      });
-
-      // ✅ Single API call
       const res = await API.post("/analyze", { tickers, manual: manualMap });
       console.log("API Response:", res.data);
-      setResults(res.data.results);
+      setResults(res.data.results || []);
     } catch (err) {
       console.error(err);
       alert("Error fetching stocks. Check ticker symbols and ensure backend is running.");
@@ -341,7 +353,7 @@ export default function App() {
         <>
           <div className="resultsHeader">
             <h2>Results</h2>
-            {results[0] && (
+            {results[0] && !results[0].error && (
               <p className="bestPick">
                 🏆 Best Pick: <strong>{results[0].ticker}</strong> — {results[0].finalScore}/100 ({results[0].signal})
               </p>
